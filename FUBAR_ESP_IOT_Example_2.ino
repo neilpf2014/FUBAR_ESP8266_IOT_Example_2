@@ -7,6 +7,12 @@
 #include "Arduino.h"
 
 String password;
+String APname;
+int APID;
+int APflag;
+int numNWKS;
+int Connected;
+int wlStatus;
 
 // Read String input handling: thanks Rick
 // removed to function to make code cleaner
@@ -31,26 +37,49 @@ String readStringInput(void)
 	return inputStr;
 }
 
-void setup() {
-	Serial.begin(115200);
-	password = "";
-	// Set WiFi to station mode and disconnect from an AP if it was previously connected
-	WiFi.mode(WIFI_STA);
-	WiFi.disconnect();
-	delay(100);
+// reads and parses the ID # for the AP, set to trap for int bigger then 255
+int readAPInt(void)
+{
+	char Ch;
+	int num;
+	int numr;
+	int dec;
+	
+	dec = 0;
+	num = -500;
+	Ch = 'a';
 
-	Serial.println("Setup done");
+	while ((Ch != '\n') && (num < 255))
+	{
+		while ((Serial.available() > 0))
+		{
+			Ch = Serial.read();
+			Serial.print(Ch);
+			if ((int(Ch) > 47) && (int(Ch) < 58))
+			{
+				(dec == 0) ? (num = 0) : (num);
+				numr = num;
+				num = ((int(Ch) - 48) + (numr * int(pow(10, dec))));
+				dec++;
+			}
+		}
+	}
+	// no AP will ever be over 255
+	(abs(num) > 255) ? (num = 256) : (num);
+	return num;
 }
 
-void loop() {
+int WifiScan(void)
+{
 	Serial.println("scan start");
-
 
 	// WiFi.scanNetworks will return the number of networks found
 	int n = WiFi.scanNetworks();
 	Serial.println("scan done");
 	if (n == 0)
+	{
 		Serial.println("no networks found");
+	}
 	else
 	{
 		Serial.print(n);
@@ -68,15 +97,84 @@ void loop() {
 			delay(10);
 		}
 	}
-	Serial.println("");
-	password = "";
-	Serial.println("Enter some string");
+	return n;
+}
 
-	// string input handling function defined above
-	password = readStringInput();
-	Serial.println("");
-	Serial.print("password string is ");
-	Serial.println(password);
+void setup() 
+{
+	Serial.begin(115200);
+	password = "";
+	APflag = 0;
+	Connected = 0;
+	// Set WiFi to station mode and disconnect from an AP if it was previously connected
+	WiFi.mode(WIFI_STA);
+	WiFi.disconnect();
+	delay(100);
+
+	Serial.println("Setup done");
+}
+
+
+void loop() 
+{
+	// only scan if disconnected
+	if (Connected < 1)
+	{
+		numNWKS = WifiScan();
+		Serial.println("");
+		password = "";
+		Serial.println("Enter AP Id #");
+		APID = readAPInt();
+		Serial.print("ID  is ");
+		Serial.println(APID);
+		if (APID <= numNWKS)
+		{
+			APname = WiFi.SSID(APID - 1);
+			Serial.print("you have selected AP: ");
+			Serial.println(APname);
+			APflag = 1;
+		}
+		else
+		{
+			Serial.println("you have not selected a valid AP");
+			APflag = 0;
+		}
+		Serial.println("");
+		if (APflag > 0)
+		{
+			Serial.println("Enter pass phrase for Wifi");
+			password = readStringInput();
+			Serial.print("password string is ");
+			Serial.println(password);
+			// put connection code here
+			char* APN; // need char array
+			APname.toCharArray(APN,APname.length());
+			char* PWD; // need char array
+			password.toCharArray(PWD, password.length());
+			wlStatus = WiFi.begin(APN, PWD);
+			delete APN;
+			delete PWD;
+		}
+	}
+	// show Ip's if connected to AP
+	if (wlStatus == WL_CONNECTED)
+	{
+		Serial.print("Connected to ... ");
+		Serial.println(APname);
+		Serial.println("");
+		Serial.print("IP is: ");
+		Serial.println(WiFi.localIP());
+		Serial.print("gateway is: ");
+		Serial.println(WiFi.gatewayIP());
+		Serial.print("subnet mask is: ");
+		Serial.println(WiFi.subnetMask());
+		Serial.println("");
+		Connected = 1;
+	}
+	else
+	{
+		Connected = 0;
+	}
 	// Wait a bit before scanning again
-	delay(2000);
+	delay(5000);
 }
