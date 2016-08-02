@@ -6,6 +6,11 @@
 #include "ESP8266WiFi.h"
 #include "Arduino.h"
 
+const char APc[] = ""; // SSID, for testing will remove
+const char Pwc[] = ""; // Passphase, for testing will remove
+char* PW1;
+char* AP1;
+int apSlen;
 String password;
 String APname;
 int APID;
@@ -15,26 +20,30 @@ int Connected;
 int wlStatus;
 
 // Read String input handling: thanks Rick
-// removed to function to make code cleaner
-String readStringInput(void)
+// "String" is now returned as a ptr to char assay
+char* readStringInput(void)
 {
 	char Ch = 'a';
-	String inputStr;
-	while (Ch != '\n')
+	char buffer[50];
+	int i = 0;
+	while ((Ch != '\n') && (i < 50))
 	{
 		while ((Serial.available() > 0))
 		{
 			Ch = Serial.read();
 			Serial.print(Ch);
-			inputStr += String(Ch);
+			if (Ch != '\n')
+			{
+				buffer[i] = Ch;
+				i++;
+			}
 		}
 	}
-	// not sure why this doesn't work ???
-	if (inputStr == "\n")
-	{
-		inputStr = "nothing";
-	}
-	return inputStr;
+	char* somearray = new char[i+1];
+	for (int j = 0; j < i; j++)
+		somearray[j] = buffer[j];
+	somearray[i] = '/0'; // null termination
+	return somearray;
 }
 
 // reads and parses the ID # for the AP, set to trap for int bigger then 255
@@ -69,6 +78,7 @@ int readAPInt(void)
 	return num;
 }
 
+// wifi scanning done here
 int WifiScan(void)
 {
 	Serial.println("scan start");
@@ -100,7 +110,8 @@ int WifiScan(void)
 	return n;
 }
 
-void setup() 
+// ardunio setup function
+void setup(void) 
 {
 	Serial.begin(115200);
 	password = "";
@@ -117,7 +128,7 @@ void setup()
 
 void loop() 
 {
-	// only scan if disconnected
+	// only scan and attempt conection if disconnected
 	if (Connected < 1)
 	{
 		numNWKS = WifiScan();
@@ -143,21 +154,39 @@ void loop()
 		if (APflag > 0)
 		{
 			Serial.println("Enter pass phrase for Wifi");
-			password = readStringInput();
-			Serial.print("password string is ");
-			Serial.println(password);
+			if (PW1 != nullptr)
+				delete PW1;
+			PW1 = readStringInput();
+			Serial.print("password string is "); // debug for PW char array
+			Serial.println(PW1);
 			// put connection code here
-			char* APN; // need char array
-			APname.toCharArray(APN,APname.length());
-			char* PWD; // need char array
-			password.toCharArray(PWD, password.length());
-			wlStatus = WiFi.begin(APN, PWD);
-			delete APN;
-			delete PWD;
+			// next 5 lines convert AP string to Chr array
+			apSlen = APname.length() + 1;
+			if (AP1 != nullptr)
+				delete AP1;
+			AP1 = new char[apSlen+1];  // need to make sure not creating a memory leak here
+			APname.toCharArray(AP1, apSlen);
+
+			Serial.print("ap test char array is :");
+			Serial.println(AP1); //debug char array conversion
+			//Serial.println(PWD);
+
+			//connect to wifi here and let us know when connected
+			wlStatus = WiFi.begin(AP1, PW1);
+			while (WiFi.status() != WL_CONNECTED) 
+			{
+				delay(500);
+				Serial.print(".");
+			}
+			Serial.print("wl status ");
+			Serial.println(wlStatus);
 		}
 	}
+
 	// show Ip's if connected to AP
-	if (wlStatus == WL_CONNECTED)
+	Serial.print("test is "); // debug
+	Serial.println(wlStatus); // debug
+	if (WiFi.status() == WL_CONNECTED)
 	{
 		Serial.print("Connected to ... ");
 		Serial.println(APname);
@@ -175,6 +204,7 @@ void loop()
 	{
 		Connected = 0;
 	}
-	// Wait a bit before scanning again
+	// Wait a bit before looping again
+	// might add some more code -- like option to disconnect
 	delay(5000);
 }
