@@ -6,22 +6,23 @@
 #include "ESP8266WiFi.h"
 #include "Arduino.h"
 
-const char APc[] = ""; // SSID, for testing will remove
-const char Pwc[] = ""; // Passphase, for testing will remove
-char* PW1;
-char* AP1;
+
+char* Passphase;
+char* AccessPoint;
+char* seloption;
 int apSlen;
-String password;
 String APname;
 int APID;
 int APflag;
 int numNWKS;
 int Connected;
 int wlStatus;
+int cnttime;
+
 
 // Read String input handling: thanks Rick
 // "String" is now returned as a ptr to char assay
-char* readStringInput(void)
+char* readCharAInput(void)
 {
 	char Ch = 'a';
 	char buffer[50];
@@ -31,18 +32,18 @@ char* readStringInput(void)
 		while ((Serial.available() > 0))
 		{
 			Ch = Serial.read();
-			Serial.print(Ch);
-			if (Ch != '\n')
+			if ((Ch != '\n') && (Ch != '\r')) //need to trap both <CR> & <LF> !
 			{
 				buffer[i] = Ch;
 				i++;
 			}
+			Serial.print(Ch);
 		}
 	}
 	char* somearray = new char[i+1];
 	for (int j = 0; j < i; j++)
 		somearray[j] = buffer[j];
-	somearray[i] = '/0'; // null termination
+	somearray[i] = '\0'; // null termination
 	return somearray;
 }
 
@@ -110,13 +111,38 @@ int WifiScan(void)
 	return n;
 }
 
+// function to show Ip's if connected to AP
+int ShowConnectStatus(void)
+{
+	int conn;
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		Serial.print("Connected to ... ");
+		Serial.println(APname);
+		Serial.println("");
+		Serial.print("IP is: ");
+		Serial.println(WiFi.localIP());
+		Serial.print("gateway is: ");
+		Serial.println(WiFi.gatewayIP());
+		Serial.print("subnet mask is: ");
+		Serial.println(WiFi.subnetMask());
+		Serial.println("");
+		conn = 1;
+	}
+	else
+	{
+		conn = 0;
+	}
+	return conn;
+}
+
 // ardunio setup function
 void setup(void) 
 {
 	Serial.begin(115200);
-	password = "";
 	APflag = 0;
 	Connected = 0;
+	cnttime = 0;
 	// Set WiFi to station mode and disconnect from an AP if it was previously connected
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
@@ -133,7 +159,6 @@ void loop()
 	{
 		numNWKS = WifiScan();
 		Serial.println("");
-		password = "";
 		Serial.println("Enter AP Id #");
 		APID = readAPInt();
 		Serial.print("ID  is ");
@@ -154,57 +179,63 @@ void loop()
 		if (APflag > 0)
 		{
 			Serial.println("Enter pass phrase for Wifi");
-			if (PW1 != nullptr)
-				delete PW1;
-			PW1 = readStringInput();
+			if (Passphase != nullptr)
+				delete Passphase;
+			Passphase = readCharAInput();
 			Serial.print("password string is "); // debug for PW char array
-			Serial.println(PW1);
+			Serial.println("");
+			Serial.println(Passphase);
 			// put connection code here
 			// next 5 lines convert AP string to Chr array
 			apSlen = APname.length() + 1;
-			if (AP1 != nullptr)
-				delete AP1;
-			AP1 = new char[apSlen+1];  // need to make sure not creating a memory leak here
-			APname.toCharArray(AP1, apSlen);
-
-			Serial.print("ap test char array is :");
-			Serial.println(AP1); //debug char array conversion
-			//Serial.println(PWD);
-
+			if (AccessPoint != nullptr)
+				delete AccessPoint;
+			AccessPoint = new char[apSlen];  // need to make sure not creating a memory leak here
+			APname.toCharArray(AccessPoint, apSlen);
+			
+			//for (int i = 0; i < strlen(PW1); ++i) {
+			//	Serial.printf("%02x ", PW1[i]);
+			//}
+			Serial.println("");
 			//connect to wifi here and let us know when connected
-			wlStatus = WiFi.begin(AP1, PW1);
-			while (WiFi.status() != WL_CONNECTED) 
+			// time out in 10 sec
+			wlStatus = WiFi.begin(AccessPoint, Passphase);
+			while ((WiFi.status() != WL_CONNECTED) && (cnttime < 20))
 			{
 				delay(500);
 				Serial.print(".");
+				cnttime++;
 			}
-			Serial.print("wl status ");
-			Serial.println(wlStatus);
+			if (cnttime > 19)
+				Serial.println("wifi connection timed out !");
+			Connected = ShowConnectStatus();
+			cnttime = 0;
 		}
 	}
-
+	
 	// show Ip's if connected to AP
-	Serial.print("test is "); // debug
-	Serial.println(wlStatus); // debug
-	if (WiFi.status() == WL_CONNECTED)
+	if (Connected > 0)
 	{
-		Serial.print("Connected to ... ");
-		Serial.println(APname);
-		Serial.println("");
-		Serial.print("IP is: ");
-		Serial.println(WiFi.localIP());
-		Serial.print("gateway is: ");
-		Serial.println(WiFi.gatewayIP());
-		Serial.print("subnet mask is: ");
-		Serial.println(WiFi.subnetMask());
-		Serial.println("");
-		Connected = 1;
+		Serial.println("Disconnect or show status again ?");
+		Serial.println("Enter D or S");
+		if (seloption != nullptr)
+			delete seloption;
+		seloption = readCharAInput();
+		if ((seloption[0] == 'D') || (seloption[0] == 'd'))
+		{
+			WiFi.disconnect();
+			Connected = 0;
+		}
+		if ((seloption[0] == 'S') || (seloption[0] == 's'))
+		{
+			Connected = ShowConnectStatus();
+		}
+		else
+			if (Connected > 0)
+				Serial.println("this message will repeat");
+
+		// Wait a bit before looping again
+		delay(2000);
 	}
-	else
-	{
-		Connected = 0;
-	}
-	// Wait a bit before looping again
-	// might add some more code -- like option to disconnect
-	delay(5000);
+	
 }
