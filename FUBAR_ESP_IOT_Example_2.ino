@@ -1,4 +1,4 @@
-// IOT class example 2
+// FUBAR IOT class example 2
 // This does a wifi scan and allows us to connect to an AP
 // Based on ESP8266 wifi example
 
@@ -18,6 +18,7 @@ int numNWKS;
 int Connected;
 int wlStatus;
 int cnttime;
+uint8_t LedState;
 
 
 // Read String input handling: thanks Rick
@@ -112,9 +113,9 @@ int WifiScan(void)
 }
 
 // function to show Ip's if connected to AP
-int ShowConnectStatus(void)
+uint8_t ShowConnectStatus(void)
 {
-	int conn;
+	uint8_t conn;
 	if (WiFi.status() == WL_CONNECTED)
 	{
 		Serial.print("Connected to ... ");
@@ -136,6 +137,39 @@ int ShowConnectStatus(void)
 	return conn;
 }
 
+// toggle onboard LED no retVal
+void TogLED(int state)
+{
+	uint8_t rState;
+	if (state > 0)
+	{
+		digitalWrite(LED_BUILTIN, HIGH);
+		rState = 0;
+	}
+	else
+	{
+		digitalWrite(LED_BUILTIN, LOW);
+		rState = 1;
+	}
+}
+
+// toggle onboard LED, returns led state
+uint8_t TogLED(uint8_t state)
+{
+	uint8_t rState;
+	if (state > 0)
+	{
+		digitalWrite(LED_BUILTIN, HIGH);
+		rState = 0;
+	}
+	else
+	{
+		digitalWrite(LED_BUILTIN, LOW);
+		rState = 1;
+	}
+	return rState;
+}
+
 // ardunio setup function
 void setup(void) 
 {
@@ -143,11 +177,12 @@ void setup(void)
 	APflag = 0;
 	Connected = 0;
 	cnttime = 0;
+	LedState = 0; // led off
 	// Set WiFi to station mode and disconnect from an AP if it was previously connected
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
 	delay(100);
-
+	pinMode(LED_BUILTIN, OUTPUT);
 	Serial.println("Setup done");
 }
 
@@ -202,12 +237,14 @@ void loop()
 			wlStatus = WiFi.begin(AccessPoint, Passphase);
 			while ((WiFi.status() != WL_CONNECTED) && (cnttime < 20))
 			{
+				LedState = TogLED(LedState);
 				delay(500);
 				Serial.print(".");
 				cnttime++;
 			}
 			if (cnttime > 19)
 				Serial.println("wifi connection timed out !");
+			TogLED(1);
 			Connected = ShowConnectStatus();
 			cnttime = 0;
 		}
@@ -216,6 +253,7 @@ void loop()
 	// show Ip's if connected to AP
 	if (Connected > 0)
 	{
+		TogLED(0);
 		Serial.println("Disconnect or show status again ?");
 		Serial.println("Enter D or S");
 		if (seloption != nullptr)
@@ -224,6 +262,7 @@ void loop()
 		if ((seloption[0] == 'D') || (seloption[0] == 'd'))
 		{
 			WiFi.disconnect();
+			TogLED(1);
 			Connected = 0;
 		}
 		if ((seloption[0] == 'S') || (seloption[0] == 's'))
@@ -237,5 +276,4 @@ void loop()
 		// Wait a bit before looping again
 		delay(2000);
 	}
-	
 }
