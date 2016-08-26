@@ -1,0 +1,8 @@
+﻿Visual Micro free version. PLEASE HELP by posting on social media or purchasing http://www.visualmicro.com
+
+Compiling 'FUBAR_ESP_IOT_Example_2' for 'NodeMCU 1.0 (ESP-12E Module)'
+Program size: 243,251 bytes (used 23% of a 1,044,464 byte maximum) (4.57 secs)
+Minimum Memory Usage: 32616 bytes (40% of a 81920 byte maximum)
+ 
+Uploading 'FUBAR_ESP_IOT_Example_2' to 'NodeMCU 1.0 (ESP-12E Module)' using 'COM13'
+Uploading 247408 bytes from to flash at 0x00000000
