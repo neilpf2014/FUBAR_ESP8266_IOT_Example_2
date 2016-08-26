@@ -1,6 +1,7 @@
 // FUBAR IOT class example 2
 // This does a wifi scan and allows us to connect to an AP
 // Based on ESP8266 wifi example
+// change to test git dev branch
 
 
 #include "ESP8266WiFi.h"
