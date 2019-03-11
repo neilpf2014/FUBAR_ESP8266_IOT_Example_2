@@ -1,8 +1,8 @@
 # IOT Class Session 2
 
-This is to demo using serial communication & introduce the ESP8266 Wifi library.  We will scan wifi & connect as an client. Then will control "NeoPixel" LED using FastLed library https://github.com/FastLED/FastLED please use the cpp and platformio.ini files found in the subdirs.  We will be using the PIO library manager to install FastLED.
+This is to demo using serial communication & introduce the ESP8266 Wifi library.  We will scan wifi & connect as an client. Then will control "NeoPixel" LED using FastLed library https://github.com/FastLED/FastLED.  Please use the cpp and platformio.ini files found in the subdirs.  We will be using the PIO library manager to install FastLED.
 
-- PIO lession 2 is the Wifi example
+- PIO lession 2 is the WiFi example
 - PIO lession 3 is the APA106 LED example
 
 ## APA106 "Neopixel" LED
